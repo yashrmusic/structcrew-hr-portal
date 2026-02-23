@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
-
 export const metadata: Metadata = {
-  title: "StructCrew HR Portal",
-  description: "Agentic Offer Letter Management System",
+  title: "StructCrew — Architecture & Construction Recruitment",
+  description: "Elite recruitment for architects, engineers, and construction professionals. Building the infrastructure of human capital.",
+  keywords: ["recruitment", "architecture", "construction", "hiring", "AEC", "staffing"],
+  openGraph: {
+    title: "StructCrew — Architecture & Construction Recruitment",
+    description: "Elite recruitment for architects, engineers, and construction professionals.",
+    type: "website",
+    url: "https://structcrew.online",
+  },
 };
 
 export default function RootLayout({
@@ -15,8 +19,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className="antialiased">
+      <body>
+        <div className="gradient-bg" />
+        <div className="grid-pattern" />
+        <div className="relative z-10">
+          {children}
+        </div>
+      </body>
     </html>
   );
 }
