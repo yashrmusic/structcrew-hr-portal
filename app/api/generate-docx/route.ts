@@ -4,6 +4,15 @@ import Docxtemplater from "docxtemplater";
 import * as fs from "fs";
 import * as path from "path";
 
+const AVAILABLE_TEMPLATES = [
+    "hookkapaani",
+    "decoarte",
+    "melange",
+    "melange_senior",
+    "urbanmistrii",
+    "urbanmistrii_senior",
+];
+
 export async function POST(req: NextRequest) {
     try {
         const candidateData = await req.json();
@@ -15,15 +24,25 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Load template
-        const templatePath = path.join(process.cwd(), "templates", "offer_template.docx");
+        // Determine which template to use based on extracted company/template field
+        const templateId = AVAILABLE_TEMPLATES.includes(candidateData.template)
+            ? candidateData.template
+            : "hookkapaani";
+
+        // Try company-specific template first, fall back to default
+        const companyTemplatePath = path.join(process.cwd(), "templates", templateId, "offer_template.docx");
+        const defaultTemplatePath = path.join(process.cwd(), "templates", "offer_template.docx");
+
+        const templatePath = fs.existsSync(companyTemplatePath) ? companyTemplatePath : defaultTemplatePath;
 
         if (!fs.existsSync(templatePath)) {
             return NextResponse.json(
-                { success: false, message: "Offer template not found. Place offer_template.docx in /templates/" },
+                { success: false, message: `Offer template not found for ${templateId}` },
                 { status: 500 }
             );
         }
+
+        console.log(`Using template: ${templatePath} for company: ${templateId}`);
 
         const templateContent = fs.readFileSync(templatePath, "binary");
         const zip = new PizZip(templateContent);
@@ -44,7 +63,6 @@ export async function POST(req: NextRequest) {
 
         // Build the data map matching the template placeholders
         const data: Record<string, string> = {
-            // Standard placeholders
             "Candidate Name": candidateData.name || "",
             "CANDIDATE_NAME": candidateData.name || "",
             "Job Title": candidateData.position || "",
@@ -76,7 +94,7 @@ export async function POST(req: NextRequest) {
         });
 
         const nameClean = candidateData.name.replace(/\s+/g, "_");
-        const filename = `offer_letter_${nameClean}.docx`;
+        const filename = `offer_letter_${nameClean}_${templateId}.docx`;
 
         return new NextResponse(new Uint8Array(buf), {
             status: 200,

@@ -11,6 +11,7 @@ interface CandidateData {
     start_date: string;
     salary: string;
     company: string;
+    template: string;
     [key: string]: string;
 }
 
@@ -87,7 +88,7 @@ export default function PortalPage() {
     };
 
     const displayFields = candidateData
-        ? Object.entries(candidateData).filter(([, value]) => value && value.trim() !== "")
+        ? Object.entries(candidateData).filter(([key, value]) => key !== "template" && value && value.trim() !== "")
         : [];
 
     return (
@@ -179,9 +180,14 @@ export default function PortalPage() {
 
                         {candidateData ? (
                             <div className="glass-card p-8 animate-fade-in-up">
-                                <h3 className="font-bold mb-6 flex items-center gap-2 text-emerald-400 text-sm uppercase tracking-wider">
+                                <h3 className="font-bold mb-2 flex items-center gap-2 text-emerald-400 text-sm uppercase tracking-wider">
                                     <CheckCircle2 className="w-4 h-4" /> Extracted Profile
                                 </h3>
+                                <div className="mb-6 flex items-center gap-2">
+                                    <span className="text-[10px] px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 font-semibold uppercase tracking-wider border border-blue-500/20">
+                                        Template: {candidateData.template || "default"}
+                                    </span>
+                                </div>
 
                                 <div className="space-y-4 mb-8">
                                     {displayFields.map(([key, value], i) => (
@@ -197,8 +203,8 @@ export default function PortalPage() {
                                         onClick={handleGenerateDocx}
                                         disabled={isGenerating}
                                         className={`w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${docxGenerated
-                                                ? "bg-emerald-500 text-white"
-                                                : "bg-white text-[#0a0f1e] hover:bg-slate-100"
+                                            ? "bg-emerald-500 text-white"
+                                            : "bg-white text-[#0a0f1e] hover:bg-slate-100"
                                             }`}
                                     >
                                         {isGenerating ? (

@@ -1,14 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SYSTEM_PROMPT = `Extract candidate information from the following text and return it as a JSON object.
+const AVAILABLE_TEMPLATES = [
+    "hookkapaani",
+    "decoarte",
+    "melange",
+    "melange_senior",
+    "urbanmistrii",
+    "urbanmistrii_senior",
+];
+
+const SYSTEM_PROMPT = `You are an HR assistant for StructCrew, a recruitment company. Extract candidate information from the following text and return it as a JSON object.
+
 Fields to extract:
 - name: Full name of the candidate
 - email: Email address (if not found, leave empty string)
 - phone: Phone number (if not found, leave empty string)
 - position: Job title / role
 - start_date: Joining date (format as "1 March, 2026" style)
-- salary: Monthly salary as a number string (e.g. "45000")
-- company: Company name (if not found, use "StructCrew")
+- salary: Monthly salary as a number string with commas (e.g. "45,000")
+- company: The company name mentioned in the text (e.g. "Hookkapaani Studios", "Decoarte", "Melange", "Urbanmistrii"). This is CRITICAL — always extract the company from the prompt.
+- template: Based on the company name, pick the closest matching template ID from this list: ${AVAILABLE_TEMPLATES.join(", ")}. Match loosely — "hookkapani", "hookkapaani", "hookkapaani studios" all map to "hookkapaani". "urban mistrii" or "urbanmistri" maps to "urbanmistrii". If the position sounds senior (Senior, Manager, Lead, Director, Head, VP, Chief), and the company is melange or urbanmistrii, append "_senior" to the template (e.g. "melange_senior"). If no company is recognized, use "hookkapaani" as default.
 
 If a field is not found in the text, leave it as an empty string "".
 Output ONLY the raw JSON object, no markdown, no code fences, no explanation.`;
@@ -65,6 +76,11 @@ export async function POST(req: NextRequest) {
         text = text.trim();
 
         const parsed = JSON.parse(text);
+
+        // Validate template selection
+        if (!parsed.template || !AVAILABLE_TEMPLATES.includes(parsed.template)) {
+            parsed.template = "hookkapaani";
+        }
 
         return NextResponse.json({ success: true, data: parsed });
     } catch (error: unknown) {
