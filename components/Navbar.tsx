@@ -20,6 +20,12 @@ export default function Navbar() {
         { label: "Contact", href: "#contact" },
     ];
 
+    const portalLinks = [
+        { label: "HR Portal", href: "/portal" },
+        { label: "Automation", href: "/automation", badge: "New" },
+        { label: "LeadGen", href: "/leadgen", badge: "New" },
+    ];
+
     return (
         <>
             <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled
@@ -58,13 +64,20 @@ export default function Navbar() {
 
                             <div className="w-px h-6 bg-white/10 mx-3" />
 
-                            <Link
-                                href="/portal"
-                                className="group ml-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-cyan-500 text-white text-sm font-semibold transition-all duration-300 flex items-center gap-2 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
-                            >
-                                HR Portal
-                                <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                            </Link>
+                            {portalLinks.map((link) => (
+                                <Link
+                                    key={link.label}
+                                    href={link.href}
+                                    className="group ml-2 px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-all rounded-lg hover:bg-white/5 flex items-center gap-2"
+                                >
+                                    {link.label}
+                                    {link.badge && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">
+                                            {link.badge}
+                                        </span>
+                                    )}
+                                </Link>
+                            ))}
                         </div>
 
                         {/* Mobile Toggle */}
@@ -92,13 +105,22 @@ export default function Navbar() {
                                 {link.label}
                             </Link>
                         ))}
-                        <Link
-                            href="/portal"
-                            onClick={() => setIsMobileOpen(false)}
-                            className="mt-6 w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white text-center text-lg font-bold"
-                        >
-                            Open HR Portal
-                        </Link>
+                        <div className="border-b border-white/10 my-2" />
+                        {portalLinks.map((link) => (
+                            <Link
+                                key={link.label}
+                                href={link.href}
+                                onClick={() => setIsMobileOpen(false)}
+                                className="text-xl font-semibold text-slate-300 hover:text-white py-4 border-b border-white/5 transition-colors flex items-center gap-2"
+                            >
+                                {link.label}
+                                {link.badge && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-semibold">
+                                        {link.badge}
+                                    </span>
+                                )}
+                            </Link>
+                        ))}
                     </div>
                 </div>
             )}

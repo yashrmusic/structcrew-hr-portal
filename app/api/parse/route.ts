@@ -19,7 +19,16 @@ Fields to extract:
 - start_date: Joining date (format as "1 March, 2026" style)
 - salary: Monthly salary as a number string with commas (e.g. "45,000")
 - company: The company name mentioned in the text (e.g. "Hookkapaani Studios", "Decoarte", "Melange", "Urbanmistrii"). This is CRITICAL — always extract the company from the prompt.
-- template: Based on the company name, pick the closest matching template ID from this list: ${AVAILABLE_TEMPLATES.join(", ")}. Match loosely — "hookkapani", "hookkapaani", "hookkapaani studios" all map to "hookkapaani". "urban mistrii" or "urbanmistri" maps to "urbanmistrii". If the position sounds senior (Senior, Manager, Lead, Director, Head, VP, Chief), and the company is melange or urbanmistrii, append "_senior" to the template (e.g. "melange_senior"). If no company is recognized, use "hookkapaani" as default.
+- template: Based on the company name, pick the closest matching template ID from this list: ${AVAILABLE_TEMPLATES.join(", ")}. CRITICAL MAPPING RULES - MATCH EXACTLY:
+  1. "hookkapani" → "hookkapaani" (THIS IS CRITICAL - the input "hookkapani" MUST map to "hookkapaani", NOT melange)
+  2. "hookkapaani" → "hookkapaani"
+  3. "hookkapaani studios" → "hookkapaani"
+  4. Any other hookkapaani variation (hoookkapani, hookkapni, hookkapaani) → "hookkapaani"
+  5. "decoarte" → "decoarte"
+  6. "melange" → "melange" (add "_senior" if senior position)
+  7. "urbanmistrii" → "urbanmistrii" (add "_senior" if senior position)
+  * If the position sounds senior (Senior, Manager, Lead, Director, Head, VP, Chief), and the company is melange or urbanmistrii, append "_senior" to the template.
+  * If no company is recognized, use "hookkapaani" as default.
 
 If a field is not found in the text, leave it as an empty string "".
 Output ONLY the raw JSON object, no markdown, no code fences, no explanation.`;
@@ -76,6 +85,19 @@ export async function POST(req: NextRequest) {
         text = text.trim();
 
         const parsed = JSON.parse(text);
+
+        // Fix common misspellings for hookkapaani
+        const hookkapaaniVariants = ["hookkapani", "hoookkapani", "hookkapni", "hookkapano", "hookkapaanii"];
+        if (hookkapaaniVariants.includes(parsed.template?.toLowerCase())) {
+            parsed.template = "hookkapaani";
+        }
+
+        // CRITICAL: Force hookkapaani if prompt mentions hookkapani - override AI's wrong choice
+        const promptLower = prompt.toLowerCase();
+        if (promptLower.includes("hookkapani") || promptLower.includes("hookkapaani") || promptLower.includes("hookkapni")) {
+            parsed.template = "hookkapaani";
+            parsed.company = "Hookkapaani";
+        }
 
         // Validate template selection
         if (!parsed.template || !AVAILABLE_TEMPLATES.includes(parsed.template)) {
