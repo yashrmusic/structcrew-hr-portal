@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const SYSTEM_PROMPT = `Extract candidate information from the following text and return it as a JSON object.
 Fields to extract:
@@ -25,20 +24,39 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = process.env.OPENROUTER_API_KEY;
         if (!apiKey) {
             return NextResponse.json(
-                { success: false, message: "GEMINI_API_KEY not configured. Add it to your environment variables." },
+                { success: false, message: "OPENROUTER_API_KEY not configured." },
                 { status: 500 }
             );
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://structcrew.online",
+                "X-Title": "StructCrew HR Portal",
+            },
+            body: JSON.stringify({
+                model: "google/gemini-2.0-flash-001",
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: `Candidate Text: ${prompt}` },
+                ],
+                temperature: 0.1,
+            }),
+        });
 
-        const result = await model.generateContent(`${SYSTEM_PROMPT}\n\nCandidate Text: ${prompt}`);
-        const response = result.response;
-        let text = response.text().trim();
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData?.error?.message || `OpenRouter API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        let text = data.choices?.[0]?.message?.content?.trim() || "";
 
         // Strip markdown code fences if present
         if (text.startsWith("```json")) text = text.slice(7);
