@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Sparkles, Send, FileText, CheckCircle2, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Send, FileText, CheckCircle2, ArrowLeft, Loader2, AlertCircle, Download } from "lucide-react";
 import Link from "next/link";
 
 interface CandidateData {
@@ -19,6 +19,8 @@ export default function PortalPage() {
     const [isParsing, setIsParsing] = useState(false);
     const [candidateData, setCandidateData] = useState<CandidateData | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [docxGenerated, setDocxGenerated] = useState(false);
 
     const handleMagicParse = async () => {
         if (!prompt.trim()) return;
@@ -45,6 +47,42 @@ export default function PortalPage() {
             setError(message);
         } finally {
             setIsParsing(false);
+        }
+    };
+
+    const handleGenerateDocx = async () => {
+        if (!candidateData) return;
+        setIsGenerating(true);
+        setError(null);
+        setDocxGenerated(false);
+
+        try {
+            const res = await fetch("/api/generate-docx", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(candidateData),
+            });
+
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.message || "Failed to generate DOCX");
+            }
+
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `offer_letter_${candidateData.name.replace(/\s+/g, "_")}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            setDocxGenerated(true);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "DOCX generation failed";
+            setError(message);
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -155,8 +193,21 @@ export default function PortalPage() {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <button className="w-full py-3 rounded-xl bg-white text-[#0a0f1e] font-bold text-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-2">
-                                        <FileText className="w-4 h-4" /> Generate DOCX
+                                    <button
+                                        onClick={handleGenerateDocx}
+                                        disabled={isGenerating}
+                                        className={`w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${docxGenerated
+                                                ? "bg-emerald-500 text-white"
+                                                : "bg-white text-[#0a0f1e] hover:bg-slate-100"
+                                            }`}
+                                    >
+                                        {isGenerating ? (
+                                            <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                                        ) : docxGenerated ? (
+                                            <><Download className="w-4 h-4" /> Downloaded! Click to Re-download</>
+                                        ) : (
+                                            <><FileText className="w-4 h-4" /> Generate DOCX</>
+                                        )}
                                     </button>
                                     <button className="w-full py-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 font-bold text-sm hover:bg-emerald-500/10 transition-all flex items-center justify-center gap-2">
                                         <Send className="w-4 h-4" /> Email to Candidate

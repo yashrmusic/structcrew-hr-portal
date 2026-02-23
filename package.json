@@ -11,9 +11,11 @@
     "dependencies": {
         "@google/generative-ai": "^0.24.1",
         "clsx": "^2.1.1",
+        "docxtemplater": "^3.68.2",
         "framer-motion": "^11.13.1",
         "lucide-react": "^0.468.0",
         "next": "latest",
+        "pizzip": "^3.2.0",
         "react": "latest",
         "react-dom": "latest",
         "tailwind-merge": "^2.5.5"
