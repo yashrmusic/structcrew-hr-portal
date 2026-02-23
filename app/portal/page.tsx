@@ -1,30 +1,56 @@
 "use client";
 import { useState } from "react";
-import { Sparkles, Send, FileText, CheckCircle2, ArrowLeft, Loader2 } from "lucide-react";
+import { Sparkles, Send, FileText, CheckCircle2, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
+
+interface CandidateData {
+    name: string;
+    email: string;
+    phone: string;
+    position: string;
+    start_date: string;
+    salary: string;
+    company: string;
+    [key: string]: string;
+}
 
 export default function PortalPage() {
     const [prompt, setPrompt] = useState("");
     const [isParsing, setIsParsing] = useState(false);
-    const [candidateData, setCandidateData] = useState<Record<string, string> | null>(null);
+    const [candidateData, setCandidateData] = useState<CandidateData | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     const handleMagicParse = async () => {
         if (!prompt.trim()) return;
         setIsParsing(true);
+        setError(null);
         setCandidateData(null);
-        // Simulated AI parsing — will be wired to Gemini API
-        setTimeout(() => {
-            setCandidateData({
-                name: "Adil Khan",
-                position: "Senior Site Engineer",
-                salary: "45,000",
-                start_date: "March 1, 2026",
-                email: "adil.khan@gmail.com",
-                company: "StructCrew",
+
+        try {
+            const res = await fetch("/api/parse", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt }),
             });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || "Failed to parse candidate data");
+            }
+
+            setCandidateData(data.data);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Something went wrong";
+            setError(message);
+        } finally {
             setIsParsing(false);
-        }, 2500);
+        }
     };
+
+    const displayFields = candidateData
+        ? Object.entries(candidateData).filter(([, value]) => value && value.trim() !== "")
+        : [];
 
     return (
         <div className="min-h-screen pb-20">
@@ -52,7 +78,7 @@ export default function PortalPage() {
                     <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
                         Agentic <span className="text-blue-400">Command</span> Center
                     </h1>
-                    <p className="text-slate-500 text-lg max-w-lg">Paste any text — interview notes, WhatsApp messages — and let the agent draft the offer letter.</p>
+                    <p className="text-slate-500 text-lg max-w-lg">Paste any text — interview notes, WhatsApp messages, or just describe the hire — and Gemini will extract the candidate details.</p>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -65,12 +91,12 @@ export default function PortalPage() {
                                         <Sparkles className="w-4 h-4" />
                                         <h2 className="font-semibold text-sm uppercase tracking-wider">Magic Box</h2>
                                     </div>
-                                    <span className="text-[10px] text-slate-600 uppercase tracking-wider">Gemini Agent</span>
+                                    <span className="text-[10px] text-slate-600 uppercase tracking-wider">Gemini 1.5 Flash</span>
                                 </div>
 
                                 <textarea
                                     className="w-full h-56 bg-transparent border-none focus:outline-none focus:ring-0 text-slate-300 placeholder:text-slate-700 resize-none text-sm leading-relaxed"
-                                    placeholder={`Paste anything here...\n\n"Hey, we interviewed Adil Khan today for the Site Engineer role. He was great! Offer him 45k, starting March 1st. His email is adil.khan@gmail.com"`}
+                                    placeholder={`Paste anything here...\n\n"Create offer for Yash Rakhiani from Hookkapaani, CNC Operator role, 45k salary, starting March 1 2026, email yash@hookkapaani.com"`}
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
                                 />
@@ -101,6 +127,18 @@ export default function PortalPage() {
 
                     {/* Right Column: Result (2 cols) */}
                     <div className="lg:col-span-2">
+                        {error && (
+                            <div className="glass-card p-6 mb-4 border-red-500/20 animate-fade-in-up">
+                                <div className="flex items-start gap-3 text-red-400">
+                                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                    <div>
+                                        <h3 className="font-bold text-sm mb-1">Error</h3>
+                                        <p className="text-xs text-red-400/80">{error}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {candidateData ? (
                             <div className="glass-card p-8 animate-fade-in-up">
                                 <h3 className="font-bold mb-6 flex items-center gap-2 text-emerald-400 text-sm uppercase tracking-wider">
@@ -108,10 +146,10 @@ export default function PortalPage() {
                                 </h3>
 
                                 <div className="space-y-4 mb-8">
-                                    {Object.entries(candidateData).map(([key, value], i) => (
+                                    {displayFields.map(([key, value], i) => (
                                         <div key={i} className="flex justify-between items-center border-b border-white/[0.04] pb-3">
                                             <span className="text-slate-600 text-xs uppercase tracking-wider font-medium">{key.replace(/_/g, " ")}</span>
-                                            <span className="text-white text-sm font-semibold">{String(value)}</span>
+                                            <span className="text-white text-sm font-semibold text-right max-w-[60%]">{String(value)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -125,7 +163,7 @@ export default function PortalPage() {
                                     </button>
                                 </div>
                             </div>
-                        ) : (
+                        ) : !error ? (
                             <div className="glass-card h-full min-h-[420px] flex flex-col items-center justify-center p-10 text-center">
                                 <div className="w-16 h-16 rounded-2xl bg-slate-900/60 flex items-center justify-center mb-6">
                                     <Sparkles className="w-7 h-7 text-slate-700" />
@@ -134,7 +172,7 @@ export default function PortalPage() {
                                     Fill the Magic Box and click <strong className="text-slate-400">Extract</strong> to see parsed data here.
                                 </p>
                             </div>
-                        )}
+                        ) : null}
                     </div>
                 </div>
             </main>
